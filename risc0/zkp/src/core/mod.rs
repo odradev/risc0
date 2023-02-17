@@ -34,6 +34,7 @@ pub mod sha;
 #[cfg(not(target_os = "zkvm"))]
 pub mod sha_cpu;
 pub mod sha_rng;
+pub mod blake2b;
 
 use rand_core::RngCore;
 

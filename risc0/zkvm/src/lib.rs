@@ -35,7 +35,9 @@ mod tests;
 pub use anyhow::Result;
 use control_id::CONTROL_ID;
 use control_id::POSEIDON_CONTROL_ID;
+use crate::control_id::BLAKE2B_CONTROL_ID;
 use hex::FromHex;
+use risc0_zkp::core::blake2b::{ConfigHashBlake2b, Blake2bHasher};
 use risc0_zkp::core::config::{ConfigHashPoseidon, ConfigHashSha256};
 use risc0_zkp::core::digest::Digest;
 use risc0_zkp::core::sha::Sha256;
@@ -72,6 +74,16 @@ impl ControlIdLocator for ConfigHashPoseidon {
     fn get_control_id() -> ControlId {
         let mut table = alloc::vec::Vec::new();
         for entry in POSEIDON_CONTROL_ID {
+            table.push(Digest::from_hex(entry).unwrap());
+        }
+        ControlId { table }
+    }
+}
+
+impl<T: Blake2bHasher> ControlIdLocator for ConfigHashBlake2b<T> {
+    fn get_control_id() -> ControlId {
+        let mut table = alloc::vec::Vec::new();
+        for entry in BLAKE2B_CONTROL_ID {
             table.push(Digest::from_hex(entry).unwrap());
         }
         ControlId { table }

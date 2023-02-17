@@ -30,6 +30,7 @@ use super::{Buffer, Hal};
 use crate::{
     core::{
         config::{ConfigHash, HashSuite, HashSuitePoseidon, HashSuiteSha256},
+        blake2b::{Blake2bImplCpu, HashSuiteBlake2b},
         digest::Digest,
         log2_ceil,
         ntt::{bit_rev_32, bit_reverse, evaluate_ntt, expand, interpolate_ntt},
@@ -37,6 +38,7 @@ use crate::{
     },
     FRI_FOLD,
 };
+use crate::core::blake2b::HashSuiteBlake2bCpu;
 
 pub struct CpuHal<F: Field, HS: HashSuite<F>> {
     phantom: PhantomData<(F, HS)>,
@@ -44,6 +46,7 @@ pub struct CpuHal<F: Field, HS: HashSuite<F>> {
 
 pub type BabyBearSha256CpuHal = CpuHal<BabyBear, HashSuiteSha256<BabyBear, sha_cpu::Impl>>;
 pub type BabyBearPoseidonCpuHal = CpuHal<BabyBear, HashSuitePoseidon>;
+pub type BabyBearBlake2bCpuHal = CpuHal<BabyBear, HashSuiteBlake2bCpu>;
 
 impl<F: Field, HS: HashSuite<F>> CpuHal<F, HS> {
     pub fn new() -> Self {
