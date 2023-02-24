@@ -18,6 +18,7 @@ use alloc::vec::Vec;
 use core::marker::PhantomData;
 
 use blake2::{digest::{Update, VariableOutput}, VarBlake2b};
+use rand_core::{impls, RngCore, Error};
 
 use risc0_core::field::baby_bear::{BabyBear, BabyBearElem, BabyBearExtElem};
 use risc0_core::field::ExtElem;
@@ -26,6 +27,7 @@ use crate::core::config::{ConfigHash, ConfigRng};
 
 use super::config::HashSuite;
 use super::digest::Digest;
+use risc0_core::field::Elem;
 
 /// Hash function trait.
 pub trait Blake2bHasher {
@@ -125,15 +127,28 @@ impl<T: Blake2bHasher> ConfigRng<BabyBear> for Blake2bRng<T> {
     }
 
     fn random_elem(&mut self) -> BabyBearElem {
-        BabyBearElem::new(self.random_u32())
+        BabyBearElem::random(self)
     }
 
     fn random_ext_elem(&mut self) -> BabyBearExtElem {
-        BabyBearExtElem::new(
-            self.random_elem(),
-            self.random_elem(),
-            self.random_elem(),
-            self.random_elem(),
-        )
+        BabyBearExtElem::random(self)
+    }
+}
+
+impl <T: Blake2bHasher>RngCore for Blake2bRng<T> {
+    fn next_u32(&mut self) -> u32 {
+        self.random_u32()
+    }
+
+    fn next_u64(&mut self) -> u64 {
+        impls::next_u64_via_u32(self)
+    }
+
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        impls::fill_bytes_via_next(self, dest);
+    }
+
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        Ok(self.fill_bytes(dest))
     }
 }
