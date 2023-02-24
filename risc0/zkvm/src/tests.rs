@@ -26,7 +26,7 @@ use risc0_zkvm_platform::{
 };
 use serial_test::serial;
 use test_log::test;
-use risc0_zkp::core::blake2b::{Blake2bImplCpu, HashSuiteBlake2bCpu};
+use risc0_zkp::core::blake2b::{Blake2bCpuImpl, HashSuiteBlake2bCpu};
 
 use super::{Prover, ProverOpts, Receipt};
 use crate::prove::TraceEvent;
@@ -318,7 +318,7 @@ fn test_blake2b_proof() {
     prover.add_input_u32_slice(&to_vec(&MultiTestSpec::DoNothing).unwrap());
     let receipt = prover.run_with_hal(&hal, &eval).unwrap();
     receipt
-        .verify_with_hash::<HashSuiteBlake2b<Blake2bImplCpu>, _>(&MULTI_TEST_ID)
+        .verify_with_hash::<HashSuiteBlake2b<Blake2bCpuImpl>, _>(&MULTI_TEST_ID)
         .unwrap();
 }
 

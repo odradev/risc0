@@ -17,7 +17,7 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::marker::PhantomData;
 
-use blake2::{digest::{Update, VariableOutput}, VarBlake2b};
+use blake2::{digest::{Update, VariableOutput}, Blake2bVar};
 use rand_core::{impls, RngCore, Error};
 
 use risc0_core::field::baby_bear::{BabyBear, BabyBearElem, BabyBearExtElem};
@@ -30,47 +30,46 @@ use super::digest::Digest;
 use risc0_core::field::Elem;
 
 /// Hash function trait.
-pub trait Blake2bHasher {
+pub trait Blake2b {
     /// A function producing a hash from a list of u8.
     fn blake2b<T: AsRef<[u8]>>(data: T) -> [u8; 32];
 }
 
 /// Implementation of blake2b using CPU.
-pub struct Blake2bImplCpu;
+pub struct Blake2bCpuImpl;
 
 /// Type alias for Blake2b HashSuite using CPU.
-pub type HashSuiteBlake2bCpu = HashSuiteBlake2b<Blake2bImplCpu>;
+pub type HashSuiteBlake2bCpu = HashSuiteBlake2b<Blake2bCpuImpl>;
 
-impl Blake2bHasher for Blake2bImplCpu {
+impl Blake2b for Blake2bCpuImpl {
     fn blake2b<T: AsRef<[u8]>>(data: T) -> [u8; 32] {
         let mut result = [0; 32];
-        let mut hasher = VarBlake2b::new(32).expect("should create hasher");
+        let mut hasher =
+            Blake2bVar::new(32).expect("Initializing Blake2bVar failed");
 
-        hasher.update(data);
-        hasher.finalize_variable(|slice| {
-            result.copy_from_slice(slice);
-        });
+        hasher.update(data.as_ref());
+        hasher.finalize_variable(&mut result).expect("Finalizing Blake2bVar failed");
         result
     }
 }
 
 /// Blake2b HashSuite.
-/// We are using a generic hasher to allow for different implementations.
-pub struct HashSuiteBlake2b<T: Blake2bHasher> {
+/// We are using a generic hasher to allow different implementations.
+pub struct HashSuiteBlake2b<T: Blake2b> {
     hasher: PhantomData<T>,
 }
 
-impl<T: Blake2bHasher> HashSuite<BabyBear> for HashSuiteBlake2b<T> {
+impl<T: Blake2b> HashSuite<BabyBear> for HashSuiteBlake2b<T> {
     type Hash = ConfigHashBlake2b<T>;
     type Rng = Blake2bRng<T>;
 }
 
 /// Blake2b ConfigHash.
-pub struct ConfigHashBlake2b<T: Blake2bHasher> {
+pub struct ConfigHashBlake2b<T: Blake2b> {
     hasher: PhantomData<T>,
 }
 
-impl<T: Blake2bHasher> ConfigHash<BabyBear> for ConfigHashBlake2b<T> {
+impl<T: Blake2b> ConfigHash<BabyBear> for ConfigHashBlake2b<T> {
     type DigestPtr = Box<Digest>;
 
     fn hash_pair(a: &Digest, b: &Digest) -> Self::DigestPtr {
@@ -98,12 +97,12 @@ impl<T: Blake2bHasher> ConfigHash<BabyBear> for ConfigHashBlake2b<T> {
 }
 
 /// Blake2b-based random number generator.
-pub struct Blake2bRng<T: Blake2bHasher> {
+pub struct Blake2bRng<T: Blake2b> {
     current: [u8; 32],
     hasher: PhantomData<T>,
 }
 
-impl<T: Blake2bHasher> ConfigRng<BabyBear> for Blake2bRng<T> {
+impl<T: Blake2b> ConfigRng<BabyBear> for Blake2bRng<T> {
     fn new() -> Self {
         Self {
             current: [0; 32],
@@ -135,7 +134,7 @@ impl<T: Blake2bHasher> ConfigRng<BabyBear> for Blake2bRng<T> {
     }
 }
 
-impl <T: Blake2bHasher>RngCore for Blake2bRng<T> {
+impl <T: Blake2b>RngCore for Blake2bRng<T> {
     fn next_u32(&mut self) -> u32 {
         self.random_u32()
     }
